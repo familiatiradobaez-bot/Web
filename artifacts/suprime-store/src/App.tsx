@@ -10,11 +10,13 @@ import {
   ChevronDown,
   Heart,
   Instagram,
+  LogOut,
   Menu,
   Minus,
   Plus,
   RotateCcw,
   Search,
+  Shield,
   ShoppingBag,
   Sparkles,
   Truck,
@@ -38,6 +40,7 @@ type Product = {
   description: string;
 };
 type CartItem = { product: Product; quantity: number };
+type User = { id: number; name: string; email: string; role: 'admin' | 'customer' };
 
 const queryClient = new QueryClient();
 
@@ -141,7 +144,6 @@ function ProductVisual({ product, large = false }: { product: Product; large?: b
     </div>
   );
 }
-
 function Home() {
   const [selectedCategory, setSelectedCategory] = useState<Category>('Todo');
   const [search, setSearch] = useState('');
@@ -151,27 +153,21 @@ function Home() {
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState('');
-  const [newsletter, setNewsletter] = useState('');
-  const [newsletterSent, setNewsletterSent] = useState(false);
+
+  // Estados de Autenticación
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
 
   useEffect(() => {
     document.title = 'Suprime — cosas buenas para todos los días';
-    const description = 'Descubre piezas útiles, bonitas y con personalidad para tu día a día. Envíos a todo República Dominicana.';
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'description');
-      document.head.appendChild(meta);
+    const savedUser = localStorage.getItem('suprime_user');
+    if (savedUser) {
+      try { setCurrentUser(JSON.parse(savedUser)); } catch (e) {}
     }
-    meta.setAttribute('content', description);
-    const ogTitle = document.querySelector('meta[property="og:title"]') || document.createElement('meta');
-    ogTitle.setAttribute('property', 'og:title');
-    ogTitle.setAttribute('content', 'Suprime — cosas buenas para todos los días');
-    document.head.appendChild(ogTitle);
-    const ogDescription = document.querySelector('meta[property="og:description"]') || document.createElement('meta');
-    ogDescription.setAttribute('property', 'og:description');
-    ogDescription.setAttribute('content', description);
-    document.head.appendChild(ogDescription);
   }, []);
 
   useEffect(() => {
@@ -184,9 +180,7 @@ function Home() {
     if (!mobileMenu) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
+    return () => { document.body.style.overflow = previousOverflow; };
   }, [mobileMenu]);
 
   const filteredProducts = useMemo(() => {
@@ -219,12 +213,44 @@ function Home() {
     showToast(favorites.includes(id) ? 'Quitado de tus favoritos' : 'Guardado en tus favoritos');
   };
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newsletter.trim()) {
-      setNewsletterSent(true);
-      setNewsletter('');
+    const endpoint = isRegisterMode ? '/api/auth/register' : '/api/auth/login';
+    const payload = isRegisterMode 
+      ? { email: authEmail, password: authPassword, name: authName } 
+      : { email: authEmail, password: authPassword };
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Ocurrió un error');
+        return;
+      }
+
+      if (isRegisterMode) {
+        showToast('¡Cuenta creada! Ahora inicia sesión');
+        setIsRegisterMode(false);
+      } else {
+        setCurrentUser(data.user);
+        localStorage.setItem('suprime_user', JSON.stringify(data.user));
+        showToast(`¡Bienvenido, ${data.user.name || data.user.email}!`);
+        setAuthModalOpen(false);
+      }
+    } catch (err) {
+      alert('Error de conexión con el servidor');
     }
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('suprime_user');
+    showToast('Sesión cerrada');
   };
 
   return (
@@ -238,11 +264,11 @@ function Home() {
 
       <header className="nav-blur sticky top-0 z-40 border-b hairline">
         <div className="mx-auto flex h-[74px] max-w-[1440px] items-center justify-between gap-5 px-5 md:px-10">
-          <button className="icon-button rounded-full p-2 md:hidden" onClick={() => setMobileMenu(true)} aria-label="Abrir menú" data-testid="button-open-menu"><Menu size={22} strokeWidth={1.7} /></button>
-          <a href="#inicio" className="font-display text-[30px] font-semibold tracking-[-.07em] text-[#174f49]" data-testid="link-home">suprime<span className="text-[#ec684f]">.</span></a>
-          <nav className="hidden items-center gap-7 text-[12px] font-bold uppercase tracking-[.12em] md:flex" aria-label="Navegación principal">
+          <button className="icon-button rounded-full p-2 md:hidden" onClick={() => setMobileMenu(true)} aria-label="Abrir menú"><Menu size={22} strokeWidth={1.7} /></button>
+          <a href="#inicio" className="font-display text-[30px] font-semibold tracking-[-.07em] text-[#174f49]">suprime<span className="text-[#ec684f]">.</span></a>
+          <nav className="hidden items-center gap-7 text-[12px] font-bold uppercase tracking-[.12em] md:flex">
             {(['Mujer', 'Hombre', 'Niños', 'Casa', 'Bienestar'] as Category[]).map((category) => (
-              <button key={category} onClick={() => { setSelectedCategory(category); document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' }); }} className="group relative py-3 text-[#21352f] transition-colors hover:text-[#ec684f]" data-testid={`button-nav-${category.toLowerCase()}`}>
+              <button key={category} onClick={() => { setSelectedCategory(category); document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' }); }} className="group relative py-3 text-[#21352f] transition-colors hover:text-[#ec684f]">
                 {category}<span className="absolute bottom-1 left-0 h-[2px] w-0 bg-[#ec684f] transition-all group-hover:w-full" />
               </button>
             ))}
@@ -250,66 +276,52 @@ function Home() {
           <div className="flex items-center gap-1">
             <div className="hidden items-center border-b border-[#b9b3a8] px-1 py-2 lg:flex">
               <Search size={16} strokeWidth={1.8} className="mr-2 text-[#174f49]" />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar algo bueno..." className="w-36 bg-transparent text-[12px] outline-none placeholder:text-[#7f8179]" aria-label="Buscar productos" data-testid="input-search-desktop" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar algo bueno..." className="w-36 bg-transparent text-[12px] outline-none placeholder:text-[#7f8179]" />
             </div>
-            <button className="icon-button relative rounded-full p-2" aria-label="Cuenta" data-testid="button-account"><UserRound size={19} strokeWidth={1.7} /></button>
-            <button className="icon-button relative rounded-full p-2" onClick={() => setCartOpen(true)} aria-label={`Abrir bolsa, ${cartCount} artículos`} data-testid="button-open-cart"><ShoppingBag size={20} strokeWidth={1.7} />{cartCount > 0 && <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ec684f] px-1 text-[9px] font-bold text-[#fff4e7]" data-testid="text-cart-count">{cartCount}</span>}</button>
+
+            {currentUser ? (
+              <div className="flex items-center gap-2 bg-[#e7e1d5] px-3 py-1.5 rounded-full">
+                {currentUser.role === 'admin' ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-[#ec684f] uppercase tracking-wider">
+                    <Shield size={14} /> Admin
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-bold text-[#174f49] truncate max-w-[100px]">{currentUser.name || currentUser.email}</span>
+                )}
+                <button onClick={logout} title="Cerrar sesión" className="p-1 text-[#174f49] hover:text-[#ec684f]">
+                  <LogOut size={15} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setAuthModalOpen(true)} className="icon-button relative rounded-full p-2" aria-label="Cuenta"><UserRound size={19} strokeWidth={1.7} /></button>
+            )}
+
+            <button className="icon-button relative rounded-full p-2" onClick={() => setCartOpen(true)} aria-label={`Abrir bolsa, ${cartCount} artículos`}><ShoppingBag size={20} strokeWidth={1.7} />{cartCount > 0 && <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ec684f] px-1 text-[9px] font-bold text-[#fff4e7]">{cartCount}</span>}</button>
           </div>
         </div>
       </header>
+
       {mobileMenu && (
         <div className="fixed inset-0 z-[60] flex min-h-[100dvh] flex-col overflow-y-auto bg-[#174f49] px-6 py-7 text-[#f6f0e6] md:hidden">
           <div className="flex items-center justify-between">
-            <a
-              href="#inicio"
-              onClick={() => setMobileMenu(false)}
-              className="font-display text-3xl tracking-[-.06em]"
-            >
-              suprime<span className="text-[#ec684f]">.</span>
-            </a>
-            <button
-              onClick={() => setMobileMenu(false)}
-              className="rounded-full p-2"
-              aria-label="Cerrar menú"
-              data-testid="button-close-menu"
-            >
-              <X />
-            </button>
+            <a href="#inicio" onClick={() => setMobileMenu(false)} className="font-display text-3xl tracking-[-.06em]">suprime<span className="text-[#ec684f]">.</span></a>
+            <button onClick={() => setMobileMenu(false)} className="rounded-full p-2" aria-label="Cerrar menú"><X /></button>
           </div>
           <div className="mt-20 flex flex-col gap-6 font-display text-5xl">
-            {(['Mujer', 'Hombre', 'Niños', 'Casa', 'Bienestar'] as Category[]).map(
-              (category) => (
-                <button
-                  className="text-left"
-                  key={category}
-                  onClick={() => {
-                    setSelectedCategory(category);
-                    setMobileMenu(false);
-                    document
-                      .getElementById('productos')
-                      ?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  {category}
-                </button>
-              ),
-            )}
+            {(['Mujer', 'Hombre', 'Niños', 'Casa', 'Bienestar'] as Category[]).map((category) => (
+              <button className="text-left" key={category} onClick={() => { setSelectedCategory(category); setMobileMenu(false); document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' }); }}>{category}</button>
+            ))}
           </div>
-          <p className="mt-auto pt-12 font-mono-brand text-xs uppercase tracking-widest text-[#bfd2bb]">
-            Santo Domingo · República Dominicana
-          </p>
         </div>
       )}
-
-      <main id="inicio">
+            <main id="inicio">
         <section className="mx-auto grid max-w-[1440px] gap-8 px-5 pb-14 pt-7 md:grid-cols-[1.02fr_.98fr] md:px-10 md:pb-24 md:pt-12">
           <div className="flex flex-col justify-center">
             <div className="fade-up mb-7 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[.2em] text-[#ec684f]"><Sparkles size={14} /> Productos seleccionados para tu día a día</div>
             <h1 className="fade-up fade-up-delay-1 max-w-[650px] font-display text-[clamp(3.6rem,8.2vw,8.4rem)] leading-[.85] tracking-[-.075em] text-[#174f49]">Cosas<br /><span className="ml-[.35em] text-[#ec684f]">buenas</span><br />para todos.</h1>
             <p className="fade-up fade-up-delay-2 mt-8 max-w-[430px] text-[15px] leading-7 text-[#596660]">Una selección de hallazgos útiles, bonitos y con personalidad. Sin ruido. Solo lo que sí quieres tener cerca.</p>
             <div className="fade-up fade-up-delay-3 mt-9 flex flex-wrap items-center gap-4">
-              <button onClick={() => { setSelectedCategory('Todo'); document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' }); }} className="group flex items-center gap-4 rounded-full bg-[#ec684f] px-6 py-3.5 text-[12px] font-bold uppercase tracking-[.12em] text-[#fff4e7] transition-transform hover:-translate-y-1" data-testid="button-explore-all">Explorar novedades <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></button>
-              <span className="font-mono-brand text-[10px] uppercase tracking-[.15em] text-[#758078]">Edición 03 / 2024</span>
+              <button onClick={() => { setSelectedCategory('Todo'); document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' }); }} className="group flex items-center gap-4 rounded-full bg-[#ec684f] px-6 py-3.5 text-[12px] font-bold uppercase tracking-[.12em] text-[#fff4e7] transition-transform hover:-translate-y-1">Explorar novedades <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></button>
             </div>
           </div>
           <div className="hero-grid relative min-h-[470px] overflow-hidden rounded-[28px] bg-[#d8e5dc] md:min-h-[630px]">
@@ -318,11 +330,8 @@ function Home() {
             <div className="absolute bottom-[-6%] right-[-7%] h-[60%] w-[63%] rounded-t-[55%] bg-[#f5d787]" />
             <div className="float-soft absolute bottom-[11%] left-[18%] z-10 h-[54%] w-[46%] rounded-[48%_48%_12%_12%] bg-[#f4e9d8] shadow-[14px_18px_0_#b9cdbb]">
               <div className="absolute left-1/2 top-[-17%] h-[33%] w-[49%] -translate-x-1/2 rounded-full bg-[#f4e9d8] shadow-[inset_-6px_-7px_0_#dfd1be]" />
-              <div className="absolute left-[31%] top-[35%] h-2 w-[37%] rounded-full bg-[#d6c3ae]" />
-              <div className="absolute left-[31%] top-[44%] h-2 w-[28%] rounded-full bg-[#e2d1bd]" />
             </div>
             <div className="absolute right-[9%] top-[18%] rotate-[12deg] text-right font-display text-[42px] leading-[.85] tracking-[-.08em] text-[#174f49]">made<br />to stay.</div>
-            <span className="absolute bottom-5 left-5 font-mono-brand text-[10px] uppercase tracking-[.14em] text-[#174f49]">Suprime Curated Studio</span>
           </div>
         </section>
 
@@ -334,15 +343,7 @@ function Home() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {categories.map((cat) => (
-                <button
-                  key={cat.label}
-                  onClick={() => setSelectedCategory(cat.label)}
-                  className={`rounded-full px-4 py-2 text-[12px] font-bold uppercase tracking-[.1em] transition-colors ${
-                    selectedCategory === cat.label
-                      ? 'bg-[#174f49] text-[#fff4e7]'
-                      : 'bg-[#e7e1d5] text-[#21352f] hover:bg-[#ded6c7]'
-                  }`}
-                >
+                <button key={cat.label} onClick={() => setSelectedCategory(cat.label)} className={`rounded-full px-4 py-2 text-[12px] font-bold uppercase tracking-[.1em] transition-colors ${selectedCategory === cat.label ? 'bg-[#174f49] text-[#fff4e7]' : 'bg-[#e7e1d5] text-[#21352f] hover:bg-[#ded6c7]'}`}>
                   {cat.label} <span className="ml-1 opacity-60">({cat.count})</span>
                 </button>
               ))}
@@ -353,27 +354,11 @@ function Home() {
             {filteredProducts.map((product) => (
               <div key={product.id} className="group relative flex flex-col overflow-hidden rounded-[20px] bg-[#ebe4d8] p-4 transition-all duration-300 hover:shadow-lg">
                 <div className="relative overflow-hidden rounded-[14px]">
-                  {product.tag && (
-                    <span className="absolute left-3 top-3 z-10 rounded-full bg-[#174f49] px-3 py-1 font-mono-brand text-[9px] uppercase tracking-[.15em] text-[#fff4e7]">
-                      {product.tag}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => toggleFavorite(product.id)}
-                    className="absolute right-3 top-3 z-10 rounded-full bg-[#f6f0e6]/80 p-2 text-[#174f49] backdrop-blur-sm transition-colors hover:bg-[#f6f0e6]"
-                    aria-label="Guardar en favoritos"
-                  >
+                  {product.tag && <span className="absolute left-3 top-3 z-10 rounded-full bg-[#174f49] px-3 py-1 font-mono-brand text-[9px] uppercase tracking-[.15em] text-[#fff4e7]">{product.tag}</span>}
+                  <button onClick={() => toggleFavorite(product.id)} className="absolute right-3 top-3 z-10 rounded-full bg-[#f6f0e6]/80 p-2 text-[#174f49] backdrop-blur-sm transition-colors hover:bg-[#f6f0e6]">
                     <Heart size={16} className={favorites.includes(product.id) ? 'fill-[#ec684f] text-[#ec684f]' : ''} />
                   </button>
                   <ProductVisual product={product} />
-                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-[#174f49]/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <button
-                      onClick={() => setQuickView(product)}
-                      className="rounded-full bg-[#f6f0e6] px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-[#174f49] shadow-md transition-transform hover:scale-105"
-                    >
-                      Ver detalle
-                    </button>
-                  </div>
                 </div>
                 <div className="mt-4 flex flex-1 flex-col justify-between">
                   <div>
@@ -381,160 +366,41 @@ function Home() {
                     <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[#596660]">{product.description}</p>
                   </div>
                   <div className="mt-4 flex items-center justify-between pt-2">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-mono-brand text-[15px] font-bold text-[#174f49]">{money(product.price)}</span>
-                      {product.oldPrice && (
-                        <span className="font-mono-brand text-[12px] text-[#8c948f] line-through">{money(product.oldPrice)}</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => addToCart(product)}
-                      className="rounded-full bg-[#174f49] p-2.5 text-[#fff4e7] transition-colors hover:bg-[#ec684f]"
-                      aria-label="Añadir a la bolsa"
-                    >
-                      <Plus size={16} />
-                    </button>
+                    <span className="font-mono-brand text-[15px] font-bold text-[#174f49]">{money(product.price)}</span>
+                    <button onClick={() => addToCart(product)} className="rounded-full bg-[#174f49] p-2.5 text-[#fff4e7] transition-colors hover:bg-[#ec684f]"><Plus size={16} /></button>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </section>
-        
-        <section className="bg-[#174f49] py-20 text-[#f6f0e6]">
-          <div className="mx-auto max-w-[1440px] px-5 md:px-10">
-            <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-              <div>
-                <span className="font-mono-brand text-[11px] uppercase tracking-[.2em] text-[#ec684f]">Boletín Suprime</span>
-                <h2 className="mt-2 font-display text-[42px] leading-tight tracking-[-.05em]">Cosas buenas directo en tu correo.</h2>
-                <p className="mt-4 max-w-[480px] text-[15px] leading-relaxed text-[#bfd2bb]">
-                  Suscríbete para recibir lanzamientos exclusivos, descuentos especiales y curadurías semanales de objetos bonitos.
-                </p>
-              </div>
-              <div>
-                {newsletterSent ? (
-                  <div className="flex items-center gap-3 rounded-2xl bg-[#236a6d] p-6 text-[#fff4e7]">
-                    <Check className="text-[#ec684f]" />
-                    <p className="font-mono-brand text-[13px]">¡Gracias por suscribirte! Te hemos enviado un correo de bienvenida.</p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleNewsletterSubmit} className="flex flex-col gap-3 sm:flex-row">
-                    <input
-                      type="email"
-                      value={newsletter}
-                      onChange={(e) => setNewsletter(e.target.value)}
-                      placeholder="Tu correo electrónico..."
-                      required
-                      className="flex-1 rounded-full bg-[#236a6d] px-6 py-4 text-[14px] text-[#fff4e7] outline-none placeholder:text-[#bfd2bb]"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-full bg-[#ec684f] px-8 py-4 text-[12px] font-bold uppercase tracking-widest text-[#fff4e7] transition-colors hover:bg-[#d9573f]"
-                    >
-                      Unirme
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
-      <footer className="border-t hairline bg-[#ebd2be]/30 py-12 text-[#21352f]">
-        <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-6 px-5 text-center md:flex-row md:px-10 md:text-left">
-          <div>
-            <a href="#inicio" className="font-display text-2xl tracking-[-.06em] text-[#174f49]">suprime<span className="text-[#ec684f]">.</span></a>
-            <p className="mt-1 font-mono-brand text-[11px] text-[#596660]">Cosas buenas para todos los días.</p>
-          </div>
-          <p className="font-mono-brand text-[11px] text-[#596660]">
-            © {new Date().getFullYear()} Suprime Studio. República Dominicana. Todos los derechos reservados.
-          </p>
-        </div>
-      </footer>
-
-      {quickView && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#174f49]/60 p-4 backdrop-blur-sm">
-          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-[#f6f0e6] p-6 shadow-2xl md:p-8">
-            <button
-              onClick={() => setQuickView(null)}
-              className="absolute right-4 top-4 rounded-full bg-[#e7e1d5] p-2 text-[#174f49] hover:bg-[#ded6c7]"
-            >
-              <X size={20} />
-            </button>
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="overflow-hidden rounded-[18px]">
-                <ProductVisual product={quickView} large />
-              </div>
-              <div className="flex flex-col justify-between">
-                <div>
-                  <span className="font-mono-brand text-[10px] uppercase tracking-[.2em] text-[#ec684f]">{quickView.category}</span>
-                  <h3 className="mt-1 font-display text-[28px] text-[#174f49]">{quickView.name}</h3>
-                  <p className="mt-4 text-[14px] leading-relaxed text-[#596660]">{quickView.description}</p>
-                  <div className="mt-6 flex items-baseline gap-3">
-                    <span className="font-mono-brand text-[22px] font-bold text-[#174f49]">{money(quickView.price)}</span>
-                    {quickView.oldPrice && (
-                      <span className="font-mono-brand text-[14px] text-[#8c948f] line-through">{money(quickView.oldPrice)}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-8 flex gap-3">
-                  <button
-                    onClick={() => {
-                      addToCart(quickView);
-                      setQuickView(null);
-                    }}
-                    className="flex-1 rounded-full bg-[#ec684f] py-3.5 text-center text-[12px] font-bold uppercase tracking-wider text-[#fff4e7] transition-colors hover:bg-[#d9573f]"
-                  >
-                    Añadir a la bolsa
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Cart Drawer */}
       {cartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-[#174f49]/50 backdrop-blur-sm">
           <div className="flex h-full w-full max-w-md flex-col bg-[#f6f0e6] p-6 shadow-xl">
             <div className="flex items-center justify-between border-b border-[#e7e1d5] pb-4">
               <h3 className="font-display text-[22px] text-[#174f49]">Tu bolsa ({cartCount})</h3>
-              <button onClick={() => setCartOpen(false)} className="rounded-full p-2 hover:bg-[#e7e1d5]">
-                <X size={20} />
-              </button>
+              <button onClick={() => setCartOpen(false)} className="rounded-full p-2 hover:bg-[#e7e1d5]"><X size={20} /></button>
             </div>
             <div className="flex-1 overflow-y-auto py-4">
-              {cart.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center text-center">
-                  <ShoppingBag size={48} className="text-[#b9b3a8]" />
-                  <p className="mt-4 font-mono-brand text-[13px] text-[#596660]">Tu bolsa está vacía</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {cart.map((item) => (
-                    <div key={item.product.id} className="flex gap-4 rounded-xl bg-[#ebe4d8] p-3">
-                      <div className="h-16 w-16 overflow-hidden rounded-lg">
-                        <ProductVisual product={item.product} />
-                      </div>
-                      <div className="flex flex-1 flex-col justify-between">
-                        <div>
-                          <h4 className="font-display text-[15px] text-[#174f49]">{item.product.name}</h4>
-                          <span className="font-mono-brand text-[12px] text-[#596660]">{money(item.product.price)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => changeQuantity(item.product.id, -1)} className="rounded-full bg-[#f6f0e6] p-1 text-[#174f49]">
-                            <Minus size={12} />
-                          </button>
-                          <span className="font-mono-brand text-[12px]">{item.quantity}</span>
-                          <button onClick={() => changeQuantity(item.product.id, 1)} className="rounded-full bg-[#f6f0e6] p-1 text-[#174f49]">
-                            <Plus size={12} />
-                          </button>
-                        </div>
-                      </div>
+              {cart.map((item) => (
+                <div key={item.product.id} className="flex gap-4 rounded-xl bg-[#ebe4d8] p-3 mb-3">
+                  <div className="h-16 w-16 overflow-hidden rounded-lg"><ProductVisual product={item.product} /></div>
+                  <div className="flex flex-1 flex-col justify-between">
+                    <div>
+                      <h4 className="font-display text-[15px] text-[#174f49]">{item.product.name}</h4>
+                      <span className="font-mono-brand text-[12px] text-[#596660]">{money(item.product.price)}</span>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => changeQuantity(item.product.id, -1)} className="rounded-full bg-[#f6f0e6] p-1 text-[#174f49]"><Minus size={12} /></button>
+                      <span className="font-mono-brand text-[12px]">{item.quantity}</span>
+                      <button onClick={() => changeQuantity(item.product.id, 1)} className="rounded-full bg-[#f6f0e6] p-1 text-[#174f49]"><Plus size={12} /></button>
+                    </div>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
             {cart.length > 0 && (
               <div className="border-t border-[#e7e1d5] pt-4">
@@ -542,36 +408,81 @@ function Home() {
                   <span className="text-[13px] text-[#596660]">Total</span>
                   <span className="text-[18px] font-bold text-[#174f49]">{money(cartTotal)}</span>
                 </div>
-                <button 
+                <button
                   onClick={async () => {
-    try {
-      showToast('Iniciando pago con PayPal...');
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: cartTotal }),
-      });
-      const data = await res.json();
-      
-      const approveUrl = data.links?.find((l: any) => l.rel === 'approve')?.href;
-      
-      if (approveUrl) {
-        window.location.href = approveUrl;
-      } else {
-        alert('Error al generar la orden de PayPal. Revisa que PAYPAL_CLIENT_ID y PAYPAL_SECRET estén bien en Cloudflare.');
-        console.error(data);
-      }
-    } catch (err) {
-      alert('Error de conexión con el servidor de cobros.');
-      console.error(err);
-    }
-  }}
-  className="w-full rounded-full bg-[#174f49] py-4 text-center text-[12px] font-bold uppercase tracking-widest text-[#fff4e7] transition-colors hover:bg-[#ec684f]"
->
-  Pagar con PayPal ({money(cartTotal)})
-</button>
+                    try {
+                      showToast('Iniciando pago con PayPal...');
+                      const res = await fetch('/api/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: cartTotal }),
+                      });
+                      const data = await res.json();
+                      const approveUrl = data.links?.find((l: any) => l.rel === 'approve')?.href;
+                      if (approveUrl) {
+                        window.location.href = approveUrl;
+                      } else {
+                        alert('Error al generar la orden de PayPal.');
+                      }
+                    } catch (err) {
+                      alert('Error de conexión con el servidor de cobros.');
+                    }
+                  }}
+                  className="w-full rounded-full bg-[#174f49] py-4 text-center text-[12px] font-bold uppercase tracking-widest text-[#fff4e7] transition-colors hover:bg-[#ec684f]"
+                >
+                  Pagar con PayPal ({money(cartTotal)})
+                </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Autenticación */}
+      {authModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#174f49]/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[28px] bg-[#f6f0e6] p-6 shadow-2xl md:p-8">
+            <button onClick={() => setAuthModalOpen(false)} className="absolute right-4 top-4 rounded-full bg-[#e7e1d5] p-2 text-[#174f49] hover:bg-[#ded6c7]"><X size={18} /></button>
+            <h3 className="font-display text-[26px] text-[#174f49]">{isRegisterMode ? 'Crear cuenta' : 'Iniciar sesión'}</h3>
+            <p className="mt-1 text-[13px] text-[#596660]">{isRegisterMode ? 'Únete a Suprime para guardar tus pedidos' : 'Ingresa tus datos para continuar'}</p>
+
+            <form onSubmit={handleAuthSubmit} className="mt-6 flex flex-col gap-4">
+              {isRegisterMode && (
+                <input
+                  type="text"
+                  placeholder="Tu nombre completo"
+                  value={authName}
+                  onChange={(e) => setAuthName(e.target.value)}
+                  required
+                  className="rounded-full bg-[#ebe4d8] px-5 py-3 text-[13px] text-[#174f49] outline-none"
+                />
+              )}
+              <input
+                type="email"
+                placeholder="Tu correo electrónico"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                required
+                className="rounded-full bg-[#ebe4d8] px-5 py-3 text-[13px] text-[#174f49] outline-none"
+              />
+              <input
+                type="password"
+                placeholder="Contraseña"
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                required
+                className="rounded-full bg-[#ebe4d8] px-5 py-3 text-[13px] text-[#174f49] outline-none"
+              />
+              <button type="submit" className="mt-2 rounded-full bg-[#174f49] py-3.5 text-[12px] font-bold uppercase tracking-widest text-[#fff4e7] transition-colors hover:bg-[#ec684f]">
+                {isRegisterMode ? 'Registrarse' : 'Entrar'}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center border-t border-[#e7e1d5] pt-4">
+              <button onClick={() => setIsRegisterMode(!isRegisterMode)} className="text-[12px] font-bold text-[#ec684f] underline">
+                {isRegisterMode ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate gratis'}
+              </button>
+            </div>
           </div>
         </div>
       )}
