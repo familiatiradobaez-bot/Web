@@ -108,9 +108,9 @@ function ProductVisual({ product, large = false }: { product: Product; large?: b
       )}
       {product.visual === 'serum' && (
         <div className="relative h-56 w-36">
-          <div className="absolute left-[44px] top-1 h-12 w-48px rounded-t-md bg-[#e9e3d0] w-12" />
+          <div className="absolute left-[44px] top-1 h-12 w-12 rounded-t-md bg-[#e9e3d0]" />
           <div className="absolute bottom-4 left-2 h-44 w-32 rounded-[12px_12px_28px_28px] bg-[#f6ead3] shadow-[9px_10px_0_#a9ba78]" />
-          <div className="absolute bottom-16 left-7 h-12 w-22 -rotate-90 rounded-lg bg-[#a9ba78] w-20" />
+          <div className="absolute bottom-16 left-7 h-12 w-20 -rotate-90 rounded-lg bg-[#a9ba78]" />
           <div className="absolute bottom-[76px] left-[45px] text-[10px] font-bold uppercase tracking-[.18em] text-[#f6ead3] [writing-mode:vertical-rl]">brisa</div>
         </div>
       )}
@@ -131,7 +131,7 @@ function ProductVisual({ product, large = false }: { product: Product; large?: b
       )}
       {product.visual === 'shorts' && (
         <div className="relative h-52 w-48">
-          <div className="absolute left-6 top-8 h-32 w-72px rounded-b-[35px] rounded-t-lg bg-[#29777b] shadow-[10px_10px_0_#1f6468] w-20" />
+          <div className="absolute left-6 top-8 h-32 w-20 rounded-b-[35px] rounded-t-lg bg-[#29777b] shadow-[10px_10px_0_#1f6468]" />
           <div className="absolute right-6 top-8 h-32 w-20 rounded-b-[35px] rounded-t-lg bg-[#29777b] shadow-[10px_10px_0_#1f6468]" />
           <div className="absolute left-8 top-4 h-16 w-32 rounded-t-[24px] bg-[#2b8587]" />
           <div className="absolute left-16 top-20 h-2 w-16 rounded-full bg-[#a8d8d5]" />
@@ -217,6 +217,14 @@ function Home() {
   const toggleFavorite = (id: number) => {
     setFavorites((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
     showToast(favorites.includes(id) ? 'Quitado de tus favoritos' : 'Guardado en tus favoritos');
+  };
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newsletter.trim()) {
+      setNewsletterSent(true);
+      setNewsletter('');
+    }
   };
 
   return (
@@ -314,83 +322,260 @@ function Home() {
               <div className="absolute left-[31%] top-[44%] h-2 w-[28%] rounded-full bg-[#e2d1bd]" />
             </div>
             <div className="absolute right-[9%] top-[18%] rotate-[12deg] text-right font-display text-[42px] leading-[.85] tracking-[-.08em] text-[#174f49]">made<br />to stay.</div>
-            <span className="absolute bottom-5 left-5 font-mono-brand text-[10px] uppercase tracking-[.18em] text-[#174f49]/60">Suprime / Santo Domingo</span>
-            <button className="absolute bottom-5 right-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#174f49] text-[#f6f0e6] transition-transform hover:rotate-45" onClick={() => setQuickView(products[2])} aria-label="Ver selección del mes" data-testid="button-hero-quick-view"><ArrowUpRight size={19} /></button>
+            <span className="absolute bottom-5 left-5 font-mono-brand text-[10px] uppercase tracking-[.14em] text-[#174f49]">Suprime Curated Studio</span>
           </div>
         </section>
 
-        <section className="border-y hairline bg-[#174f49] text-[#f6f0e6]">
-          <div className="mx-auto flex max-w-[1440px] items-center gap-7 overflow-x-auto px-5 py-5 md:justify-between md:px-10">
-            <span className="shrink-0 font-display text-2xl italic text-[#f5d787]">¿Qué se te antoja?</span>
-            {categories.slice(1).map((category) => <button key={category.label} onClick={() => { setSelectedCategory(category.label); document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' }); }} className="group flex shrink-0 items-center gap-2 text-[11px] font-bold uppercase tracking-[.16em] text-[#d4e2d6] transition-colors hover:text-[#f5d787]" data-testid={`button-category-${category.label.toLowerCase()}`}><span className="h-1.5 w-1.5 rounded-full bg-[#ec684f] transition-transform group-hover:scale-150" />{category.label}<sup className="font-mono-brand text-[9px] text-[#91b4a3]">{category.count}</sup></button>)}
-          </div>
-        </section>
-
-        <section id="productos" className="mx-auto max-w-[1440px] px-5 py-16 md:px-10 md:py-24">
-          <div className="mb-9 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div><p className="mb-3 font-mono-brand text-[10px] uppercase tracking-[.2em] text-[#ec684f]">01 / Hallazgos recientes</p><h2 className="font-display text-5xl tracking-[-.06em] text-[#174f49] md:text-6xl">Recién llegados<span className="text-[#ec684f]">.</span></h2></div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 border-b border-[#b9b3a8] pb-2 lg:hidden"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar" className="w-28 bg-transparent text-sm outline-none" aria-label="Buscar productos" data-testid="input-search-mobile" /></div>
-              <button className="flex items-center gap-2 rounded-full border hairline px-4 py-2.5 text-[11px] font-bold uppercase tracking-[.12em] text-[#596660]" onClick={() => showToast('Estamos ordenando lo mejor para ti')} data-testid="button-sort"><span>Ordenar</span><ChevronDown size={14} /></button>
+        <section id="productos" className="mx-auto max-w-[1440px] px-5 py-12 md:px-10">
+          <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <p className="font-mono-brand text-[11px] uppercase tracking-[.18em] text-[#ec684f]">Catálogo activo</p>
+              <h2 className="font-display text-[40px] tracking-[-.06em] text-[#174f49]">Explora la colección.</h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.label}
+                  onClick={() => setSelectedCategory(cat.label)}
+                  className={`rounded-full px-4 py-2 text-[12px] font-bold uppercase tracking-[.1em] transition-colors ${
+                    selectedCategory === cat.label
+                      ? 'bg-[#174f49] text-[#fff4e7]'
+                      : 'bg-[#e7e1d5] text-[#21352f] hover:bg-[#ded6c7]'
+                  }`}
+                >
+                  {cat.label} <span className="ml-1 opacity-60">({cat.count})</span>
+                </button>
+              ))}
             </div>
           </div>
-          <div className="mb-8 flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar">
-            {categories.map((category) => <button key={category.label} onClick={() => setSelectedCategory(category.label)} className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-bold uppercase tracking-[.12em] transition-all ${selectedCategory === category.label ? 'border-[#174f49] bg-[#174f49] text-[#f6f0e6]' : 'hairline text-[#718078] hover:border-[#174f49] hover:text-[#174f49]'}`} data-testid={`button-filter-${category.label.toLowerCase()}`}>{category.label} <span className="ml-1 font-mono-brand text-[9px] opacity-60">{category.count}</span></button>)}
-          </div>
-          {filteredProducts.length ? <div className="grid grid-cols-2 gap-x-3 gap-y-9 md:grid-cols-4 md:gap-x-5 md:gap-y-12">
-            {filteredProducts.map((product, index) => <article key={product.id} className={`product-card group relative ${index === 0 ? 'fade-up' : ''}`} data-testid={`card-product-${product.id}`}>
-              <div className="relative overflow-hidden rounded-[15px]">
-                <ProductVisual product={product} />
-                {product.tag && <span className="absolute left-3 top-3 rounded-full bg-[#f6f0e6] px-2.5 py-1 font-mono-brand text-[9px] uppercase tracking-[.1em] text-[#174f49]">{product.tag}</span>}
-                <button onClick={() => toggleFavorite(product.id)} aria-label={favorites.includes(product.id) ? `Quitar ${product.name} de favoritos` : `Guardar ${product.name} en favoritos`} className={`icon-button absolute right-3 top-3 rounded-full p-2 ${favorites.includes(product.id) ? 'bg-[#ec684f] text-[#fff4e7]' : 'bg-[#f6f0e6] text-[#174f49]'}`} data-testid={`button-favorite-${product.id}`}><Heart size={15} fill={favorites.includes(product.id) ? 'currentColor' : 'none'} /></button>
-                <button onClick={() => setQuickView(product)} className="absolute bottom-3 left-3 right-3 flex translate-y-2 items-center justify-between rounded-full bg-[#174f49] px-4 py-3 text-[10px] font-bold uppercase tracking-[.12em] text-[#f6f0e6] opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100" data-testid={`button-quick-view-${product.id}`}>Vista rápida <ArrowUpRight size={15} /></button>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {filteredProducts.map((product) => (
+              <div key={product.id} className="group relative flex flex-col overflow-hidden rounded-[20px] bg-[#ebe4d8] p-4 transition-all duration-300 hover:shadow-lg">
+                <div className="relative overflow-hidden rounded-[14px]">
+                  {product.tag && (
+                    <span className="absolute left-3 top-3 z-10 rounded-full bg-[#174f49] px-3 py-1 font-mono-brand text-[9px] uppercase tracking-[.15em] text-[#fff4e7]">
+                      {product.tag}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => toggleFavorite(product.id)}
+                    className="absolute right-3 top-3 z-10 rounded-full bg-[#f6f0e6]/80 p-2 text-[#174f49] backdrop-blur-sm transition-colors hover:bg-[#f6f0e6]"
+                    aria-label="Guardar en favoritos"
+                  >
+                    <Heart size={16} className={favorites.includes(product.id) ? 'fill-[#ec684f] text-[#ec684f]' : ''} />
+                  </button>
+                  <ProductVisual product={product} />
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-[#174f49]/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <button
+                      onClick={() => setQuickView(product)}
+                      className="rounded-full bg-[#f6f0e6] px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-[#174f49] shadow-md transition-transform hover:scale-105"
+                    >
+                      Ver detalle
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-1 flex-col justify-between">
+                  <div>
+                    <h3 className="font-display text-[18px] tracking-tight text-[#174f49]">{product.name}</h3>
+                    <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[#596660]">{product.description}</p>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between pt-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-mono-brand text-[15px] font-bold text-[#174f49]">{money(product.price)}</span>
+                      {product.oldPrice && (
+                        <span className="font-mono-brand text-[12px] text-[#8c948f] line-through">{money(product.oldPrice)}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="rounded-full bg-[#174f49] p-2.5 text-[#fff4e7] transition-colors hover:bg-[#ec684f]"
+                      aria-label="Añadir a la bolsa"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-start justify-between gap-2 pt-4"><div><p className="mb-1 text-[10px] font-bold uppercase tracking-[.1em] text-[#8b928a]">{product.category}</p><h3 className="max-w-[170px] text-[13px] font-bold leading-5 text-[#174f49]">{product.name}</h3></div><div className="text-right"><p className="font-mono-brand text-[12px] font-medium text-[#174f49]">{money(product.price)}</p>{product.oldPrice && <p className="mt-1 font-mono-brand text-[10px] text-[#9b9c91] line-through">{money(product.oldPrice)}</p>}</div></div>
-            </article>)}
-          </div> : <div className="rounded-2xl border border-dashed border-[#b9b3a8] px-6 py-20 text-center"><p className="font-display text-3xl text-[#174f49]">No encontramos eso<span className="text-[#ec684f]">.</span></p><p className="mt-3 text-sm text-[#758078]">Prueba otra palabra o mira todos nuestros hallazgos.</p><button onClick={() => { setSearch(''); setSelectedCategory('Todo'); }} className="mt-6 rounded-full bg-[#174f49] px-5 py-3 text-[11px] font-bold uppercase tracking-widest text-[#f6f0e6]" data-testid="button-clear-filters">Ver todo</button></div>}
-        </section>
-
-        <section className="mx-5 overflow-hidden rounded-[26px] bg-[#f3c8ca] md:mx-10">
-          <div className="mx-auto grid max-w-[1440px] items-center gap-8 px-6 py-12 md:grid-cols-[1fr_.8fr] md:px-16 md:py-16">
-            <div><p className="mb-3 font-mono-brand text-[10px] uppercase tracking-[.2em] text-[#b43d48]">02 / La casa también se viste</p><h2 className="max-w-[600px] font-display text-5xl leading-[.94] tracking-[-.065em] text-[#174f49] md:text-7xl">Pequeños cambios,<br /><i className="text-[#ec684f]">gran mood.</i></h2><p className="mt-6 max-w-[390px] text-sm leading-6 text-[#5b6057]">Objetos que hacen que tu casa se sienta más tuya. Piezas para usar, mirar y volver a querer.</p><button onClick={() => { setSelectedCategory('Casa'); document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' }); }} className="group mt-7 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[.15em] text-[#174f49]" data-testid="button-shop-home">Ver selección casa <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></button></div>
-            <div className="relative mx-auto h-64 w-full max-w-[430px] md:h-80"><div className="absolute left-[18%] top-[8%] h-[78%] w-[50%] rotate-6 rounded-[48%_48%_20%_20%] bg-[#f5d787] shadow-[12px_14px_0_#e98f8a]" /><div className="absolute right-[3%] top-[15%] h-[67%] w-[43%] -rotate-12 rounded-[45%_45%_17%_17%] bg-[#d7e3ca] shadow-[12px_14px_0_#b1c7a8]" /><div className="absolute bottom-0 left-[28%] h-3 w-[55%] rounded-full bg-[#174f49]/20" /></div>
+            ))}
           </div>
         </section>
-
-        <section className="mx-auto grid max-w-[1440px] gap-12 px-5 py-20 md:grid-cols-[.8fr_1.2fr] md:px-10 md:py-28">
-          <div><p className="mb-3 font-mono-brand text-[10px] uppercase tracking-[.2em] text-[#ec684f]">03 / Promesa Suprime</p><h2 className="max-w-[440px] font-display text-5xl leading-[.95] tracking-[-.06em] text-[#174f49] md:text-6xl">Elegimos con<br /><span className="text-[#ec684f]">buen ojo.</span></h2><p className="mt-7 max-w-[370px] text-sm leading-7 text-[#66716b]">No tienes que perderte entre mil opciones. Visitamos, probamos y dejamos aquí solo las cosas que nos gustaría encontrar.</p></div>
-          <div className="grid gap-0 divide-y hairline border-y">
-            {[{ icon: Check, title: 'Útil de verdad', body: 'Diseño que se usa, no que ocupa espacio.' }, { icon: Truck, title: 'Llega a tu puerta', body: 'Envíos a todo el país desde Santo Domingo.' }, { icon: RotateCcw, title: 'Compra sin drama', body: 'Si no era para ti, lo resolvemos fácil.' }].map(({ icon: Icon, title, body }, index) => <div key={title} className="flex items-center gap-5 py-6"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#dce9dd] text-[#174f49]"><Icon size={19} strokeWidth={1.7} /></span><div className="flex-1"><h3 className="font-display text-2xl text-[#174f49]">{title}</h3><p className="mt-1 text-sm text-[#77817b]">{body}</p></div><span className="font-mono-brand text-[10px] text-[#a1a79e]">0{index + 1}</span></div>)}
+        
+        <section className="bg-[#174f49] py-20 text-[#f6f0e6]">
+          <div className="mx-auto max-w-[1440px] px-5 md:px-10">
+            <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+              <div>
+                <span className="font-mono-brand text-[11px] uppercase tracking-[.2em] text-[#ec684f]">Boletín Suprime</span>
+                <h2 className="mt-2 font-display text-[42px] leading-tight tracking-[-.05em]">Cosas buenas directo en tu correo.</h2>
+                <p className="mt-4 max-w-[480px] text-[15px] leading-relaxed text-[#bfd2bb]">
+                  Suscríbete para recibir lanzamientos exclusivos, descuentos especiales y curadurías semanales de objetos bonitos.
+                </p>
+              </div>
+              <div>
+                {newsletterSent ? (
+                  <div className="flex items-center gap-3 rounded-2xl bg-[#236a6d] p-6 text-[#fff4e7]">
+                    <Check className="text-[#ec684f]" />
+                    <p className="font-mono-brand text-[13px]">¡Gracias por suscribirte! Te hemos enviado un correo de bienvenida.</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleNewsletterSubmit} className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      type="email"
+                      value={newsletter}
+                      onChange={(e) => setNewsletter(e.target.value)}
+                      placeholder="Tu correo electrónico..."
+                      required
+                      className="flex-1 rounded-full bg-[#236a6d] px-6 py-4 text-[14px] text-[#fff4e7] outline-none placeholder:text-[#bfd2bb]"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-[#ec684f] px-8 py-4 text-[12px] font-bold uppercase tracking-widest text-[#fff4e7] transition-colors hover:bg-[#d9573f]"
+                    >
+                      Unirme
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="bg-[#174f49] px-5 pb-8 pt-14 text-[#f6f0e6] md:px-10 md:pt-20">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="grid gap-12 md:grid-cols-[1.3fr_.7fr_.7fr_1fr]">
-            <div><a href="#inicio" className="font-display text-5xl tracking-[-.08em]" data-testid="link-footer-home">suprime<span className="text-[#ec684f]">.</span></a><p className="mt-5 max-w-[270px] text-sm leading-6 text-[#bdd0c3]">Para los días normales, los planes improvisados y todo lo que pasa entre medio.</p></div>
-            <div><p className="mb-5 font-mono-brand text-[10px] uppercase tracking-[.18em] text-[#f5d787]">Explora</p><div className="flex flex-col gap-3 text-sm text-[#d5e2d7]">{['Mujer', 'Hombre', 'Casa', 'Bienestar'].map((label) => <button className="text-left transition-colors hover:text-[#f5d787]" key={label} onClick={() => { setSelectedCategory(label as Category); document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' }); }}>{label}</button>)}</div></div>
-            <div><p className="mb-5 font-mono-brand text-[10px] uppercase tracking-[.18em] text-[#f5d787]">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-[#d5e2d7] hover:text-[#f5d787]" data-testid="link-instagram"><Instagram size={17} /> @suprime.do</a><p className="mt-3 text-sm text-[#bdd0c3]">Santo Domingo,<br />República Dominicana</p></div>
-            <div><p className="mb-5 font-mono-brand text-[10px] uppercase tracking-[.18em] text-[#f5d787]">Una buena idea</p>{newsletterSent ? <div className="flex items-center gap-2 rounded-xl border border-[#8daf99] px-4 py-4 text-sm text-[#d5e2d7]"><Check size={17} /> Ya estás en la lista.</div> : <form onSubmit={(event) => { event.preventDefault(); if (newsletter.includes('@')) { setNewsletterSent(true); showToast('Bienvenido a la lista Suprime'); } }} className="flex border-b border-[#759b89] pb-2"><input type="email" required value={newsletter} onChange={(event) => setNewsletter(event.target.value)} placeholder="Tu email, sin spam" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#8daf99]" aria-label="Email para newsletter" data-testid="input-newsletter" /><button type="submit" aria-label="Suscribirme" className="text-[#f5d787]" data-testid="button-newsletter"><ArrowRight size={19} /></button></form>}<p className="mt-3 text-[10px] leading-4 text-[#8daf99]">Novedades, hallazgos y algún descuento. Una vez por semana.</p></div>
+      <footer className="border-t hairline bg-[#ebd2be]/30 py-12 text-[#21352f]">
+        <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-6 px-5 text-center md:flex-row md:px-10 md:text-left">
+          <div>
+            <a href="#inicio" className="font-display text-2xl tracking-[-.06em] text-[#174f49]">suprime<span className="text-[#ec684f]">.</span></a>
+            <p className="mt-1 font-mono-brand text-[11px] text-[#596660]">Cosas buenas para todos los días.</p>
           </div>
-          <div className="mt-16 flex flex-col justify-between gap-3 border-t border-[#3e7368] pt-6 font-mono-brand text-[9px] uppercase tracking-[.12em] text-[#8daf99] md:flex-row"><span>© 2024 Suprime Store</span><span>Hecho para vivir bonito</span><span>RD$ · Español</span></div>
+          <p className="font-mono-brand text-[11px] text-[#596660]">
+            © {new Date().getFullYear()} Suprime Studio. República Dominicana. Todos los derechos reservados.
+          </p>
         </div>
       </footer>
 
-      {quickView && <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#174f49]/45 p-0 backdrop-blur-sm md:items-center md:p-6" onClick={() => setQuickView(null)}><div className="modal-enter relative grid max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-[25px] bg-[#f6f0e6] md:grid-cols-2 md:rounded-[25px]" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Detalle de ${quickView.name}`}><button onClick={() => setQuickView(null)} className="icon-button absolute right-4 top-4 z-10 rounded-full bg-[#f6f0e6] p-2 text-[#174f49]" aria-label="Cerrar vista rápida" data-testid="button-close-quick-view"><X size={18} /></button><ProductVisual product={quickView} large /><div className="flex flex-col p-7 md:p-10"><p className="font-mono-brand text-[10px] uppercase tracking-[.18em] text-[#ec684f]">{quickView.category} / selección suprime</p><h2 className="mt-4 font-display text-4xl leading-none tracking-[-.06em] text-[#174f49]">{quickView.name}</h2><p className="mt-5 text-sm leading-6 text-[#68736b]">{quickView.description}</p><div className="mt-7 flex items-baseline gap-3"><span className="font-mono-brand text-xl text-[#174f49]">{money(quickView.price)}</span>{quickView.oldPrice && <span className="font-mono-brand text-xs text-[#9b9c91] line-through">{money(quickView.oldPrice)}</span>}</div><div className="mt-auto pt-9"><button onClick={() => { addToCart(quickView); setQuickView(null); }} className="flex w-full items-center justify-center gap-3 rounded-full bg-[#ec684f] py-4 text-[11px] font-bold uppercase tracking-[.15em] text-[#fff4e7] transition-transform hover:-translate-y-1" data-testid={`button-add-quick-${quickView.id}`}>Agregar a la bolsa <ShoppingBag size={16} /></button><button onClick={() => toggleFavorite(quickView.id)} className="mt-3 flex w-full items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase tracking-[.14em] text-[#174f49]" data-testid={`button-save-quick-${quickView.id}`}><Heart size={15} fill={favorites.includes(quickView.id) ? 'currentColor' : 'none'} /> {favorites.includes(quickView.id) ? 'Guardado' : 'Guardar para después'}</button></div></div></div></div>}
+      {quickView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#174f49]/60 p-4 backdrop-blur-sm">
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-[#f6f0e6] p-6 shadow-2xl md:p-8">
+            <button
+              onClick={() => setQuickView(null)}
+              className="absolute right-4 top-4 rounded-full bg-[#e7e1d5] p-2 text-[#174f49] hover:bg-[#ded6c7]"
+            >
+              <X size={20} />
+            </button>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="overflow-hidden rounded-[18px]">
+                <ProductVisual product={quickView} large />
+              </div>
+              <div className="flex flex-col justify-between">
+                <div>
+                  <span className="font-mono-brand text-[10px] uppercase tracking-[.2em] text-[#ec684f]">{quickView.category}</span>
+                  <h3 className="mt-1 font-display text-[28px] text-[#174f49]">{quickView.name}</h3>
+                  <p className="mt-4 text-[14px] leading-relaxed text-[#596660]">{quickView.description}</p>
+                  <div className="mt-6 flex items-baseline gap-3">
+                    <span className="font-mono-brand text-[22px] font-bold text-[#174f49]">{money(quickView.price)}</span>
+                    {quickView.oldPrice && (
+                      <span className="font-mono-brand text-[14px] text-[#8c948f] line-through">{money(quickView.oldPrice)}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-8 flex gap-3">
+                  <button
+                    onClick={() => {
+                      addToCart(quickView);
+                      setQuickView(null);
+                    }}
+                    className="flex-1 rounded-full bg-[#ec684f] py-3.5 text-center text-[12px] font-bold uppercase tracking-wider text-[#fff4e7] transition-colors hover:bg-[#d9573f]"
+                  >
+                    Añadir a la bolsa
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {cartOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-[#174f49]/50 backdrop-blur-sm">
+          <div className="flex h-full w-full max-w-md flex-col bg-[#f6f0e6] p-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#e7e1d5] pb-4">
+              <h3 className="font-display text-[22px] text-[#174f49]">Tu bolsa ({cartCount})</h3>
+              <button onClick={() => setCartOpen(false)} className="rounded-full p-2 hover:bg-[#e7e1d5]">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto py-4">
+              {cart.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <ShoppingBag size={48} className="text-[#b9b3a8]" />
+                  <p className="mt-4 font-mono-brand text-[13px] text-[#596660]">Tu bolsa está vacía</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map((item) => (
+                    <div key={item.product.id} className="flex gap-4 rounded-xl bg-[#ebe4d8] p-3">
+                      <div className="h-16 w-16 overflow-hidden rounded-lg">
+                        <ProductVisual product={item.product} />
+                      </div>
+                      <div className="flex flex-1 flex-col justify-between">
+                        <div>
+                          <h4 className="font-display text-[15px] text-[#174f49]">{item.product.name}</h4>
+                          <span className="font-mono-brand text-[12px] text-[#596660]">{money(item.product.price)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => changeQuantity(item.product.id, -1)} className="rounded-full bg-[#f6f0e6] p-1 text-[#174f49]">
+                            <Minus size={12} />
+                          </button>
+                          <span className="font-mono-brand text-[12px]">{item.quantity}</span>
+                          <button onClick={() => changeQuantity(item.product.id, 1)} className="rounded-full bg-[#f6f0e6] p-1 text-[#174f49]">
+                            <Plus size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {cart.length > 0 && (
+              <div className="border-t border-[#e7e1d5] pt-4">
+                <div className="mb-4 flex items-center justify-between font-mono-brand">
+                  <span className="text-[13px] text-[#596660]">Total</span>
+                  <span className="text-[18px] font-bold text-[#174f49]">{money(cartTotal)}</span>
+                </div>
+                <button className="w-full rounded-full bg-[#174f49] py-4 text-center text-[12px] font-bold uppercase tracking-widest text-[#fff4e7] transition-colors hover:bg-[#ec684f]">
+                  Procesar compra
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-      {cartOpen && <div className="fixed inset-0 z-50 bg-[#174f49]/35 backdrop-blur-sm" onClick={() => setCartOpen(false)}><aside className="drawer-enter absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-[#f6f0e6] shadow-2xl" onClick={(event) => event.stopPropagation()} aria-label="Tu bolsa" data-testid="drawer-cart"><div className="flex items-center justify-between border-b hairline px-6 py-5"><div><p className="font-mono-brand text-[10px] uppercase tracking-[.17em] text-[#ec684f]">Tu selección</p><h2 className="font-display text-3xl tracking-[-.06em] text-[#174f49]">La bolsa<span className="text-[#ec684f]">.</span></h2></div><button onClick={() => setCartOpen(false)} className="icon-button rounded-full p-2" aria-label="Cerrar bolsa" data-testid="button-close-cart"><X /></button></div>{cart.length ? <><div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">{cart.map(({ product, quantity }) => <div key={product.id} className="flex gap-4" data-testid={`cart-item-${product.id}`}><div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl"><ProductVisual product={product} /></div><div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><h3 className="text-[13px] font-bold leading-5 text-[#174f49]">{product.name}</h3><button onClick={() => changeQuantity(product.id, -quantity)} className="text-[#98a098] hover:text-[#ec684f]" aria-label={`Quitar ${product.name}`} data-testid={`button-remove-cart-${product.id}`}><X size={15} /></button></div><p className="mt-1 font-mono-brand text-xs text-[#174f49]">{money(product.price)}</p><div className="mt-3 flex w-fit items-center gap-3 rounded-full border hairline px-2 py-1"><button onClick={() => changeQuantity(product.id, -1)} aria-label="Reducir cantidad" data-testid={`button-decrease-${product.id}`}><Minus size={13} /></button><span className="min-w-4 text-center font-mono-brand text-xs">{quantity}</span><button onClick={() => changeQuantity(product.id, 1)} aria-label="Aumentar cantidad" data-testid={`button-increase-${product.id}`}><Plus size={13} /></button></div></div></div>)}</div><div className="border-t hairline px-6 py-6"><div className="mb-4 flex justify-between text-sm"><span className="text-[#758078]">Subtotal</span><span className="font-mono-brand text-[#174f49]">{money(cartTotal)}</span></div><p className="mb-5 text-[10px] leading-4 text-[#758078]">Envío calculado al finalizar. Gratis en compras de RD$3,500 o más.</p><button onClick={() => showToast('Checkout listo para conectar')} className="flex w-full items-center justify-center gap-2 rounded-full bg-[#ec684f] py-4 text-[11px] font-bold uppercase tracking-[.15em] text-[#fff4e7] transition-transform hover:-translate-y-1" data-testid="button-checkout">Ir al checkout <ArrowRight size={16} /></button></div></> : <div className="flex flex-1 flex-col items-center justify-center px-10 text-center"><div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#dce9dd] text-[#174f49]"><ShoppingBag size={28} strokeWidth={1.3} /></div><h3 className="font-display text-3xl tracking-[-.05em] text-[#174f49]">Tu bolsa está esperando<span className="text-[#ec684f]">.</span></h3><p className="mt-3 text-sm leading-6 text-[#758078]">Agrega algo que te haga sonreír. Prometemos que cabe.</p><button onClick={() => setCartOpen(false)} className="mt-7 rounded-full bg-[#174f49] px-6 py-3 text-[11px] font-bold uppercase tracking-[.13em] text-[#f6f0e6]" data-testid="button-continue-shopping">Seguir explorando</button></div>}</aside></div>}
-      {toast && <div className="toast-enter fixed bottom-6 left-1/2 z-[60] flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#174f49] px-5 py-3 text-[11px] font-bold tracking-wide text-[#f6f0e6] shadow-xl" role="status" data-testid="status-toast"><Check size={15} className="text-[#f5d787]" />{toast}</div>}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 rounded-full bg-[#174f49] px-5 py-3 font-mono-brand text-[12px] text-[#fff4e7] shadow-lg">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
 
-function Router() {
-  return <ErrorBoundary resetKey={useLocation()[0]}><Switch><Route path="/" component={Home} /><Route component={NotFound} /></Switch></ErrorBoundary>;
-}
-
-function App() {
-  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <ErrorBoundary>
+          <WouterRouter>
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route component={NotFound} />
+            </Switch>
+          </WouterRouter>
+        </ErrorBoundary>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
 }
 
 export default App;
