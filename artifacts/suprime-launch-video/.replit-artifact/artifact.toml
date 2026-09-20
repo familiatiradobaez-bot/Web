@@ -1,0 +1,29 @@
+kind = "video"
+previewPath = "/suprime-launch-video/"
+title = "Suprime Launch Video"
+description = "Video promocional vertical para presentar Suprime como una tienda online multiproducto en desarrollo, con referencias visuales reales, categorías de productos, experiencia de compra y cierre de marca."
+version = "1.0.0"
+id = "artifacts/suprime-launch-video"
+router = "path"
+videoAspectRatio = "9:16"
+
+[[services]]
+name = "web"
+paths = [ "/suprime-launch-video/" ]
+localPort = 21423
+
+[services.development]
+run = "pnpm --filter @workspace/suprime-launch-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/suprime-launch-video", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/suprime-launch-video/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21423"
+BASE_PATH = "/suprime-launch-video/"

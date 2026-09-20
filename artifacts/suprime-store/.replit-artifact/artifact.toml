@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Suprime Store"
+description = "Tienda online multiproducto para descubrir ropa, accesorios, artículos para el hogar y cuidado personal con una experiencia de compra limpia, atractiva y optimizada para móvil."
+version = "1.0.0"
+id = "artifacts/suprime-store"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22189
+
+[services.development]
+run = "pnpm --filter @workspace/suprime-store run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/suprime-store", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/suprime-store/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22189"
+BASE_PATH = "/"
