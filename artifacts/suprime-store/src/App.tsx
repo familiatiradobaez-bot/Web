@@ -542,9 +542,34 @@ function Home() {
                   <span className="text-[13px] text-[#596660]">Total</span>
                   <span className="text-[18px] font-bold text-[#174f49]">{money(cartTotal)}</span>
                 </div>
-                <button className="w-full rounded-full bg-[#174f49] py-4 text-center text-[12px] font-bold uppercase tracking-widest text-[#fff4e7] transition-colors hover:bg-[#ec684f]">
-                  Procesar compra
-                </button>
+                <button 
+                  onClick={async () => {
+    try {
+      showToast('Iniciando pago con PayPal...');
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: cartTotal }),
+      });
+      const data = await res.json();
+      
+      const approveUrl = data.links?.find((l: any) => l.rel === 'approve')?.href;
+      
+      if (approveUrl) {
+        window.location.href = approveUrl;
+      } else {
+        alert('Error al generar la orden de PayPal. Revisa que PAYPAL_CLIENT_ID y PAYPAL_SECRET estén bien en Cloudflare.');
+        console.error(data);
+      }
+    } catch (err) {
+      alert('Error de conexión con el servidor de cobros.');
+      console.error(err);
+    }
+  }}
+  className="w-full rounded-full bg-[#174f49] py-4 text-center text-[12px] font-bold uppercase tracking-widest text-[#fff4e7] transition-colors hover:bg-[#ec684f]"
+>
+  Pagar con PayPal ({money(cartTotal)})
+</button>
               </div>
             )}
           </div>
