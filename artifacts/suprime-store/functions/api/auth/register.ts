@@ -1,30 +1,52 @@
-export async function onRequestPost(context: { env: { DB: D1Database } }) {
+export async function onRequestPost(context: {
+  request: Request;
+  env: { DB: D1Database };
+}) {
   try {
-    const { email, password, name } = await context.request.json();
+    const { email, password, name } = (await context.request.json()) as {
+      email?: string;
+      password?: string;
+      name?: string;
+    };
 
-    if (!email || !password) {
-      return new Response(JSON.stringify({ error: 'Email y contraseña requeridos' }), { status: 400 });
+    const username = name?.trim();
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (!username || !normalizedEmail || !password) {
+      return new Response(
+        JSON.stringify({ error: "Nombre, email y contraseña son obligatorios" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    // Verificar si el usuario ya existe
-    const existing = await context.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+    const existing = await context.env.DB
+      .prepare("SELECT id FROM users WHERE email = ? OR username = ? LIMIT 1")
+      .bind(normalizedEmail, username)
+      .first();
+
     if (existing) {
-      return new Response(JSON.stringify({ error: 'El correo ya está registrado' }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "El usuario o el correo ya están registrados" }),
+        { status: 409, headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    // El primer usuario registrado o emails clave pueden asignarse como admin
-    // Por defecto todos se crean como 'customer'
-    const role = 'customer';
+    await context.env.DB
+      .prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)")
+      .bind(username, normalizedEmail, password, "customer")
+      .run();
 
-    const result = await context.env.DB.prepare(
-      'INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, DATETIME("now"))'
-    ).bind(name || '', email, password, role).run();
-
-    return new Response(JSON.stringify({ success: true, message: 'Usuario registrado exitosamente' }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Usuario registrado exitosamente",
+      }),
+      { status: 201, headers: { "Content-Type": "application/json" } },
+    );
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: error?.message || "Error interno del servidor" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
   }
 }
-
