@@ -1,3 +1,5 @@
+import { hashPassword } from "../../lib/password";
+
 export async function onRequestPost(context: { request: Request; env: { DB: D1Database } }) {
   try {
     const { username, email, password, role } = await context.request.json() as {
@@ -29,9 +31,11 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
       });
     }
 
+    const passwordHash = await hashPassword(password);
+
     await context.env.DB
-      .prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)")
-      .bind(normalizedUsername, normalizedEmail, password, role || "customer")
+      .prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)")
+      .bind(normalizedUsername, normalizedEmail, passwordHash, role || "customer")
       .run();
 
     return new Response(JSON.stringify({
