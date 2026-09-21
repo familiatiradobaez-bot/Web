@@ -6,7 +6,7 @@ name = "suprime-store"
 compatibility_date = "2026-09-20"
 
 # Directorio donde Cloudflare buscará los archivos estáticos compilados
-pages_build_output_dir = "artifacts/suprime-store/dist"
+pages_build_output_dir = "dist"
 
 # ==========================================
 # BINDINGS (ENLACES CON BASE DE DATOS D1)
