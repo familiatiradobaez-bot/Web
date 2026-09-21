@@ -14,5 +14,5 @@ pages_build_output_dir = "artifacts/suprime-store/dist"
 [[d1_databases]]
 binding = "DB"  # Nombre que usa tu código para consultar la base de datos
 database_name = "suprime-db"
-database_id = "tu-database-id-de-cloudflare" # Opcional si ya está vinculado en el panel
+database_id = "d40071e3-b844-4a68-af64-d0fd6ca8af5e" # Opcional si ya está vinculado en el panel
 
