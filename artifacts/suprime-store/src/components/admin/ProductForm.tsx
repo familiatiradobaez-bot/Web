@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function ProductForm({ onProductCreated }: { onProductCreated: () => void }) {
+  const [categories, setCategories] = useState<string[]>(['Hogar', 'Papelería', 'Cocina']);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
   const [formData, setFormData] = useState({
     name: '',
     category: 'Hogar',
@@ -16,8 +20,34 @@ export default function ProductForm({ onProductCreated }: { onProductCreated: ()
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  // Cargar categorías existentes de los productos para mantenerlas sincronizadas
+  useEffect(() => {
+    fetch('/api/products')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const uniqueCats = Array.from(new Set(data.map((p: any) => p.category).filter(Boolean))) as string[];
+          if (uniqueCats.length > 0) {
+            setCategories(prev => Array.from(new Set([...prev, ...uniqueCats])));
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    const formattedCat = newCategoryName.trim();
+    if (!categories.includes(formattedCat)) {
+      setCategories([...categories, formattedCat]);
+    }
+    setFormData({ ...formData, category: formattedCat });
+    setNewCategoryName('');
+    setIsAddingCategory(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,11 +102,51 @@ export default function ProductForm({ onProductCreated }: { onProductCreated: ()
 
         <div>
           <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>Categoría:</label>
-          <select name="category" value={formData.category} onChange={handleChange} style={{ width: '100%', padding: '10px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }}>
-            <option value="Hogar">Hogar</option>
-            <option value="Papelería">Papelería</option>
-            <option value="Cocina">Cocina</option>
-          </select>
+          {!isAddingCategory ? (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <select 
+                name="category" 
+                value={formData.category} 
+                onChange={handleChange} 
+                style={{ flex: 1, padding: '10px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }}
+              >
+                {categories.map((cat, index) => (
+                  <option key={index} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <button 
+                type="button" 
+                onClick={() => setIsAddingCategory(true)}
+                style={{ padding: '10px 15px', background: '#e7e1d5', color: '#174f49', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                + Nueva
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input 
+                type="text" 
+                placeholder="Escribe la nueva categoría" 
+                value={newCategoryName} 
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                style={{ flex: 1, padding: '10px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }} 
+              />
+              <button 
+                type="button" 
+                onClick={handleAddCategory}
+                style={{ padding: '10px 15px', background: '#174f49', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Aceptar
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setIsAddingCategory(false)}
+                style={{ padding: '10px 15px', background: '#ccc', color: '#333', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '15px' }}>
