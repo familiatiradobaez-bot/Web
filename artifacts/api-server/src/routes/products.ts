@@ -39,6 +39,16 @@ router.post("/sections", async (req, res) => {
 
 // --- RUTAS DE PRODUCTOS ---
 
+// Obtener todos los productos
+router.get("/products", async (_req, res) => {
+  try {
+    const allProducts = await db.select().from(productsTable);
+    res.json(allProducts);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Crear un producto nuevo
 router.post("/products", async (req, res) => {
   try {
@@ -66,4 +76,3 @@ router.post("/products", async (req, res) => {
 });
 
 export default router;
-
