@@ -111,3 +111,5 @@ export function Sidebar({ currentUser, currentPath, onNavigate }: SidebarProps) 
   );
 }
 
+
+
