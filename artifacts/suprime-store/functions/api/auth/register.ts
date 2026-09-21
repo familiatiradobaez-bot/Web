@@ -1,3 +1,5 @@
+import { hashPassword } from "../lib/password";
+
 export async function onRequestPost(context: {
   request: Request;
   env: { DB: D1Database };
@@ -31,9 +33,11 @@ export async function onRequestPost(context: {
       );
     }
 
+    const passwordHash = await hashPassword(password);
+
     await context.env.DB
-      .prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)")
-      .bind(username, normalizedEmail, password, "customer")
+      .prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)")
+      .bind(username, normalizedEmail, passwordHash, "customer")
       .run();
 
     return new Response(
