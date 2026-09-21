@@ -97,6 +97,8 @@ interface ProfileModalProps {
 export function ProfileModal({ isOpen, onClose, currentUser, onLogout }: ProfileModalProps) {
   if (!isOpen || !currentUser) return null;
 
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'owner';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#174f49]/60 p-4 backdrop-blur-sm">
       <div className="relative w-full max-w-md rounded-[28px] bg-[#f6f0e6] p-6 shadow-2xl md:p-8">
@@ -109,7 +111,20 @@ export function ProfileModal({ isOpen, onClose, currentUser, onLogout }: Profile
           <div className="bg-[#ebe4d8] p-3 rounded-xl"><span className="text-[10px] uppercase font-bold text-[#7f8179] block">Correo</span>{currentUser.email}</div>
           <div className="bg-[#ebe4d8] p-3 rounded-xl"><span className="text-[10px] uppercase font-bold text-[#7f8179] block">Rol</span>{currentUser.role === 'admin' ? 'Administrador' : 'Cliente'}</div>
         </div>
-        <div className="mt-6 flex gap-2">
+
+        {/* Botón directo al panel de administración si el usuario es admin */}
+        {isAdmin && (
+          <div className="mt-4">
+            <a 
+              href="/admin" 
+              className="flex items-center justify-center gap-2 w-full rounded-full bg-[#174f49] py-3 text-[12px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#236e65]"
+            >
+              <Shield size={16} /> Ir al Panel de Administración
+            </a>
+          </div>
+        )}
+
+        <div className="mt-4 flex gap-2">
           <button onClick={onLogout} className="w-full rounded-full bg-[#ec684f] py-3 text-[12px] font-bold uppercase tracking-wider text-white">Cerrar Sesión</button>
         </div>
       </div>
