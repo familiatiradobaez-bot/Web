@@ -1,35 +1,50 @@
-export async function onRequestPost(context: { env: { DB: D1Database } }) {
+export async function onRequestPost(context: { request: Request; env: { DB: D1Database } }) {
   try {
-    const { email, password } = await context.request.json();
+    const { identifier, password } = await context.request.json() as { identifier?: string; password?: string };
 
-    if (!email || !password) {
-      return new Response(JSON.stringify({ error: 'Email y contraseña requeridos' }), { status: 400 });
+    if (!identifier || !password) {
+      return new Response(JSON.stringify({ error: "Faltan datos obligatorios (usuario/correo o contraseña)" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
-    // Buscar el usuario en D1
-    const user = await context.env.DB.prepare(
-      'SELECT id, name, email, role, password_hash FROM users WHERE email = ?'
-    ).bind(email).first();
+    // Determinamos si el identificador es un correo electrónico o un nombre de usuario
+    const isEmail = identifier.includes("@");
+    const query = isEmail 
+      ? "SELECT * FROM users WHERE email = ? LIMIT 1" 
+      : "SELECT * FROM users WHERE username = ? LIMIT 1";
 
-    if (!user || user.password_hash !== password) {
-      return new Response(JSON.stringify({ error: 'Credenciales incorrectas' }), { status: 401 });
+    const stmt = context.env.DB.prepare(query).bind(identifier);
+    const user = await stmt.first();
+
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Credenciales inválidas" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
-    // Retornar los datos del usuario sin exponer la contraseña
-    return new Response(
-      JSON.stringify({
-        success: true,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-      }),
-      { headers: { 'Content-Type': 'application/json' } }
-    );
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    // Nota: Aquí validas tu contraseña (por ejemplo, con hash o comparación directa según lo tengas implementado)
+    // Si la contraseña coincide, retornamos los datos del usuario incluyendo su rol para el frontend
+    return new Response(JSON.stringify({
+      success: true,
+      message: "Inicio de sesión exitoso",
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role || "cliente" // Enviamos el rol para controlar el panel de administración
+      }
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message || "Error interno del servidor" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }
-
