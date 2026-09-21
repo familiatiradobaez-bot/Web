@@ -7,71 +7,63 @@ export async function onRequestPost(context: { request: Request; env: { DB: D1Da
       role?: string;
     };
 
-    if (!username || !email || !password) {
+    const normalizedUsername = username?.trim();
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (!normalizedUsername || !normalizedEmail || !password) {
       return new Response(JSON.stringify({ error: "Faltan campos obligatorios (usuario, correo o contraseña)" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       });
     }
 
-    const assignedRole = role || "cliente";
-
-    // Verificamos si el usuario o correo ya existen en la base de datos D1
-    const checkStmt = context.env.DB.prepare(
-      "SELECT id FROM users WHERE email = ? OR username = ? LIMIT 1"
-    ).bind(email, username);
-    
-    const existingUser = await checkStmt.first();
+    const existingUser = await context.env.DB
+      .prepare("SELECT id FROM users WHERE email = ? OR username = ? LIMIT 1")
+      .bind(normalizedEmail, normalizedUsername)
+      .first();
 
     if (existingUser) {
       return new Response(JSON.stringify({ error: "El nombre de usuario o el correo electrónico ya están registrados" }), {
         status: 409,
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Insertamos el nuevo usuario con su respectivo rol asignado
-    const insertStmt = context.env.DB.prepare(
-      "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)"
-    ).bind(username, email, password, assignedRole);
-
-    await insertStmt.run();
+    await context.env.DB
+      .prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)")
+      .bind(normalizedUsername, normalizedEmail, password, role || "customer")
+      .run();
 
     return new Response(JSON.stringify({
       success: true,
       message: "Usuario creado exitosamente desde el panel de administración",
-      user: { username, email, role: assignedRole }
+      user: { username: normalizedUsername, email: normalizedEmail, role: role || "customer" },
     }), {
       status: 201,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
-
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || "Error interno al procesar la solicitud" }), {
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error?.message || "Error interno al procesar la solicitud" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
   }
 }
 
-export async function onRequestGet(context: { request: Request; env: { DB: D1Database } }) {
+export async function onRequestGet(context: { env: { DB: D1Database } }) {
   try {
-    // Endpoint para listar los usuarios en el panel de administración
-    const stmt = context.env.DB.prepare("SELECT id, username, email, role FROM users");
-    const { results } = await stmt.all();
+    const { results } = await context.env.DB
+      .prepare("SELECT id, username, email, role FROM users ORDER BY id DESC")
+      .all();
 
-    return new Response(JSON.stringify({
-      success: true,
-      users: results
-    }), {
+    return new Response(JSON.stringify({ success: true, users: results }), {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
-
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || "Error al obtener los usuarios" }), {
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error?.message || "Error al obtener los usuarios" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
   }
 }
