@@ -1,4 +1,4 @@
-import { verifyPassword } from "../lib/password";
+import { verifyPassword } from "../../lib/password";
 
 export async function onRequestPost(context: {
   request: Request;
@@ -22,22 +22,21 @@ export async function onRequestPost(context: {
     }
 
     const column = identifier.includes("@") ? "email" : "username";
+    const lookupValue = column === "email" ? identifier.toLowerCase() : identifier;
     const user = (await context.env.DB
-      .prepare(`SELECT id, username, email, password_hash, password, role FROM users WHERE ${column} = ? LIMIT 1`)
-      .bind(identifier)
+      .prepare(
+        `SELECT id, username, email, password_hash, role FROM users WHERE ${column} = ? LIMIT 1`,
+      )
+      .bind(lookupValue)
       .first()) as {
       id: number;
       username: string;
       email: string;
-      password_hash?: string | null;
-      password?: string | null;
+      password_hash: string | null;
       role: string | null;
     } | null;
 
-    const matchesHash = user ? await verifyPassword(password, user.password_hash || null) : false;
-    const matchesLegacy = user ? user.password === password : false;
-
-    if (!user || (!matchesHash && !matchesLegacy)) {
+    if (!user || !(await verifyPassword(password, user.password_hash))) {
       return new Response(
         JSON.stringify({ error: "Credenciales inválidas" }),
         { status: 401, headers: { "Content-Type": "application/json" } },
