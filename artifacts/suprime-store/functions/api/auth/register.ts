@@ -1,4 +1,4 @@
-import { hashPassword } from "../lib/password";
+import { hashPassword } from "../../lib/password";
 
 export async function onRequestPost(context: {
   request: Request;
@@ -41,10 +41,7 @@ export async function onRequestPost(context: {
       .run();
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Usuario registrado exitosamente",
-      }),
+      JSON.stringify({ success: true, message: "Usuario registrado exitosamente" }),
       { status: 201, headers: { "Content-Type": "application/json" } },
     );
   } catch (error: any) {
