@@ -13,6 +13,7 @@ export default function ProductForm({ onProductCreated }: { onProductCreated: ()
     stock: '',
     tag: 'Nuevo',
     description: '',
+    image: '',
     tone: '#f4e9d8',
     accent: '#174f49',
     visual: 'bag'
@@ -169,6 +170,18 @@ export default function ProductForm({ onProductCreated }: { onProductCreated: ()
             <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>Etiqueta (Tag):</label>
             <input type="text" name="tag" value={formData.tag} onChange={handleChange} style={{ width: '100%', padding: '10px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }} />
           </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', fontSize: '0.9rem' }}>URL de la Imagen:</label>
+          <input 
+            type="url" 
+            name="image" 
+            placeholder="https://ejemplo.com/imagen.jpg" 
+            value={formData.image} 
+            onChange={handleChange} 
+            style={{ width: '100%', padding: '10px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }} 
+          />
         </div>
 
         <div>
