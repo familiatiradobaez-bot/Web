@@ -8,17 +8,6 @@ import { CartDrawer } from '../components/CartDrawer';
 import { AuthModal, ProfileModal } from '../components/AuthModals';
 import { AdminModal } from '../components/AdminModal';
 
-const initialProducts: Product[] = [
-  { id: 1, name: 'Bolso Sol de Domingo', category: 'Mujer', price: 1890, oldPrice: 2290, stock: 10, tag: 'Favorito', tone: '#efcbb6', accent: '#ec684f', visual: 'bag', description: 'Textura tejida, interior amplio y el tipo de forma que mejora cualquier look.', dimensions: '30x20x10 cm', weight: '0.5 kg' },
-  { id: 2, name: 'Camisa Lino Sal Marina', category: 'Hombre', price: 2350, stock: 15, tag: 'Nuevo', tone: '#dbe4d3', accent: '#165b52', visual: 'shirt', description: 'Lino suave y fresco para días largos, desde el malecón hasta la mesa.', dimensions: 'M/L/XL', weight: '0.2 kg' },
-  { id: 3, name: 'Jarrón Arcoíris Bajo', category: 'Casa', price: 1290, stock: 8, tone: '#e9d7bd', accent: '#ee6c52', visual: 'vase', description: 'Una silueta escultórica en cerámica que trae alegría sin pedir permiso.', dimensions: '15x15x20 cm', weight: '0.8 kg' },
-  { id: 4, name: 'Runner Rayo Coral', category: 'Mujer', price: 3190, oldPrice: 3890, stock: 5, tag: 'Últimas tallas', tone: '#f3c8ca', accent: '#d83f4a', visual: 'sneaker', description: 'Ligereza, color y amortiguación para moverte por tu ciudad.', dimensions: '37-40', weight: '0.6 kg' },
-  { id: 5, name: 'Sérum Brisa de Guayaba', category: 'Bienestar', price: 980, stock: 20, tag: 'Esencial', tone: '#d7e3ca', accent: '#9aab51', visual: 'serum', description: 'Una dosis ligera de hidratación para que tu piel se sienta de vacaciones.', dimensions: '50ml', weight: '0.1 kg' },
-  { id: 6, name: 'Lámpara Nube de Tarde', category: 'Casa', price: 2850, stock: 6, tone: '#e5d9ed', accent: '#7e598e', visual: 'lamp', description: 'Luz cálida y forma suave para bajar el ritmo al final del día.', dimensions: '25x25 cm', weight: '1.2 kg' },
-  { id: 7, name: 'Gorra Club Caribe', category: 'Hombre', price: 790, stock: 12, tag: 'Nuevo', tone: '#e2ddd0', accent: '#1e4a49', visual: 'cap', description: 'Algodón lavado, visera curva y actitud de fin de semana.', dimensions: 'Ajustable', weight: '0.1 kg' },
-  { id: 8, name: 'Short Mini Marea', category: 'Niños', price: 890, stock: 14, tone: '#c7e1e2', accent: '#236a6d', visual: 'shorts', description: 'Cómodo, resistente y listo para todas las aventuras pequeñas.', dimensions: '4-8 años', weight: '0.15 kg' },
-];
-
 const categoriesData: { label: Category; count: string }[] = [
   { label: 'Todo', count: '24' },
   { label: 'Mujer', count: '08' },
@@ -66,15 +55,31 @@ export default function Home() {
     }
   });
 
-  useEffect(() => {
-    localStorage.setItem('suprime_cart', JSON.stringify(cart));
-  }, [cart]);
-
-  const [productsList] = useState<Product[]>(initialProducts);
+  // ESTADO DINÁMICO DE PRODUCTOS DESDE D1
+  const [productsList, setProductsList] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
   useEffect(() => {
     document.title = 'Suprime — cosas buenas para todos los días';
+    
+    // Cargar productos desde la API conectada a D1
+    fetch('/api/products')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setProductsList(data);
+        }
+        setLoadingProducts(false);
+      })
+      .catch((err) => {
+        console.error('Error al cargar productos:', err);
+        setLoadingProducts(false);
+      });
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('suprime_cart', JSON.stringify(cart));
+  }, [cart]);
 
   useEffect(() => {
     if (!toast) return;
@@ -102,8 +107,6 @@ export default function Home() {
       if (existing) return current.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + quantity } : item);
       return [...current, { product, quantity }];
     });
-    // CORRECCIÓN DEL CARRITO: Eliminamos setCartOpen(true) para que no se abra automáticamente.
-    // Ahora solo disparamos la notificación toast flotante:
     showToast(`${product.name} está en tu bolsa`);
   };
 
@@ -250,29 +253,35 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="group relative flex flex-col overflow-hidden rounded-[20px] bg-[#ebe4d8] p-4 transition-all duration-300 hover:shadow-lg">
-                <div className="relative overflow-hidden rounded-[14px]">
-                  {product.tag && <span className="absolute left-3 top-3 z-10 rounded-full bg-[#174f49] px-3 py-1 font-mono-brand text-[9px] uppercase tracking-[.15em] text-[#fff4e7]">{product.tag}</span>}
-                  <button onClick={() => toggleFavorite(product.id)} className="absolute right-3 top-3 z-10 rounded-full bg-[#f6f0e6]/80 p-2 text-[#174f49] backdrop-blur-sm transition-colors hover:bg-[#f6f0e6]">
-                    <Heart size={16} className={favorites.includes(product.id) ? 'fill-[#ec684f] text-[#ec684f]' : ''} />
-                  </button>
-                  <ProductVisual product={product} />
-                </div>
-                <div className="mt-4 flex flex-1 flex-col justify-between">
-                  <div>
-                    <h3 className="font-display text-[18px] tracking-tight text-[#174f49]">{product.name}</h3>
-                    <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[#596660]">{product.description}</p>
+          {loadingProducts ? (
+            <div className="py-20 text-center font-mono-brand text-[13px] text-[#596660]">Cargando catálogo desde la base de datos...</div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="py-20 text-center font-mono-brand text-[13px] text-[#596660]">No hay productos disponibles en esta categoría.</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {filteredProducts.map((product) => (
+                <div key={product.id} className="group relative flex flex-col overflow-hidden rounded-[20px] bg-[#ebe4d8] p-4 transition-all duration-300 hover:shadow-lg">
+                  <div className="relative overflow-hidden rounded-[14px]">
+                    {product.tag && <span className="absolute left-3 top-3 z-10 rounded-full bg-[#174f49] px-3 py-1 font-mono-brand text-[9px] uppercase tracking-[.15em] text-[#fff4e7]">{product.tag}</span>}
+                    <button onClick={() => toggleFavorite(product.id)} className="absolute right-3 top-3 z-10 rounded-full bg-[#f6f0e6]/80 p-2 text-[#174f49] backdrop-blur-sm transition-colors hover:bg-[#f6f0e6]">
+                      <Heart size={16} className={favorites.includes(product.id) ? 'fill-[#ec684f] text-[#ec684f]' : ''} />
+                    </button>
+                    <ProductVisual product={product} />
                   </div>
-                  <div className="mt-4 flex items-center justify-between pt-2">
-                    <span className="font-mono-brand text-[15px] font-bold text-[#174f49]">{money(product.price)}</span>
-                    <button onClick={() => addToCart(product)} className="rounded-full bg-[#174f49] p-2.5 text-[#fff4e7] transition-colors hover:bg-[#ec684f]"><Plus size={16} /></button>
+                  <div className="mt-4 flex flex-1 flex-col justify-between">
+                    <div>
+                      <h3 className="font-display text-[18px] tracking-tight text-[#174f49]">{product.name}</h3>
+                      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[#596660]">{product.description}</p>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between pt-2">
+                      <span className="font-mono-brand text-[15px] font-bold text-[#174f49]">{money(product.price)}</span>
+                      <button onClick={() => addToCart(product)} className="rounded-full bg-[#174f49] p-2.5 text-[#fff4e7] transition-colors hover:bg-[#ec684f]"><Plus size={16} /></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
 
