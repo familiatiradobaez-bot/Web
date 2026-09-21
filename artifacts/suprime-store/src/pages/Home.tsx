@@ -8,15 +8,6 @@ import { CartDrawer } from '../components/CartDrawer';
 import { AuthModal, ProfileModal } from '../components/AuthModals';
 import { AdminModal } from '../components/AdminModal';
 
-const categoriesData: { label: Category; count: string }[] = [
-  { label: 'Todo', count: '24' },
-  { label: 'Mujer', count: '08' },
-  { label: 'Hombre', count: '06' },
-  { label: 'Niños', count: '04' },
-  { label: 'Casa', count: '03' },
-  { label: 'Bienestar', count: '03' },
-];
-
 const money = (value: number) =>
   new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP', maximumFractionDigits: 0 }).format(value).replace('DOP', 'RD$');
 
@@ -55,26 +46,35 @@ export default function Home() {
     }
   });
 
-  // ESTADO DINÁMICO DE PRODUCTOS DESDE D1
+  // ESTADOS DINÁMICOS DESDE D1
   const [productsList, setProductsList] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<string[]>(['Todo']);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
   useEffect(() => {
     document.title = 'Suprime — cosas buenas para todos los días';
     
-    // Cargar productos desde la API conectada a D1
+    // Cargar productos desde D1
     fetch('/api/products')
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) {
-          setProductsList(data);
-        }
+        if (Array.isArray(data)) setProductsList(data);
         setLoadingProducts(false);
       })
       .catch((err) => {
         console.error('Error al cargar productos:', err);
         setLoadingProducts(false);
       });
+
+    // Cargar categorías desde D1
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategoriesList(['Todo', ...data]);
+        }
+      })
+      .catch((err) => console.error('Error al cargar categorías:', err));
   }, []);
 
   useEffect(() => {
@@ -245,9 +245,13 @@ export default function Home() {
               <h2 className="font-display text-[40px] tracking-[-.06em] text-[#174f49]">Explora la colección.</h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {categoriesData.map((cat) => (
-                <button key={cat.label} onClick={() => setSelectedCategory(cat.label)} className={`rounded-full px-4 py-2 text-[12px] font-bold uppercase tracking-[.1em] transition-colors ${selectedCategory === cat.label ? 'bg-[#174f49] text-[#fff4e7]' : 'bg-[#e7e1d5] text-[#21352f] hover:bg-[#ded6c7]'}`}>
-                  {cat.label} <span className="ml-1 opacity-60">({cat.count})</span>
+              {categoriesList.map((cat) => (
+                <button 
+                  key={cat} 
+                  onClick={() => setSelectedCategory(cat as Category)} 
+                  className={`rounded-full px-4 py-2 text-[12px] font-bold uppercase tracking-[.1em] transition-colors ${selectedCategory === cat ? 'bg-[#174f49] text-[#fff4e7]' : 'bg-[#e7e1d5] text-[#21352f] hover:bg-[#ded6c7]'}`}
+                >
+                  {cat}
                 </button>
               ))}
             </div>
