@@ -1,17 +1,16 @@
-export async function onRequestGet(context: { env: { DB: any } }) {
-  try {
-    // Puedes consultar una tabla específica de categorías o extraerlas de los productos
-    const { results } = await context.env.DB.prepare(
-      "SELECT DISTINCT category FROM products"
-    ).all();
+import { ensureSchema, errorMessage, json } from "../lib/db";
 
-    return new Response(JSON.stringify(results), {
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+type ApiContext = { env: { DB?: D1Database } };
+
+export async function onRequestGet(context: ApiContext) {
+  try {
+    const db = await ensureSchema(context);
+    const { results } = await db
+      .prepare("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' ORDER BY category")
+      .all();
+
+    return json(results);
+  } catch (error) {
+    return json({ error: errorMessage(error) }, 500);
   }
 }

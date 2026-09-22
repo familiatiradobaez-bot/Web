@@ -1,53 +1,41 @@
 import { hashPassword } from "../../lib/password";
+import { ensureSchema, errorMessage, json } from "../../lib/db";
 
-export async function onRequestPost(context: {
-  request: Request;
-  env: { DB: D1Database };
-}) {
+type ApiContext = { request: Request; env: { DB?: D1Database } };
+
+export async function onRequestPost(context: ApiContext) {
   try {
-    const { email, password, name } = (await context.request.json()) as {
-      email?: string;
-      password?: string;
-      name?: string;
+    const body = await context.request.json() as {
+      email?: unknown;
+      password?: unknown;
+      name?: unknown;
     };
-
-    const username = name?.trim();
-    const normalizedEmail = email?.trim().toLowerCase();
+    const username = typeof body.name === "string" ? body.name.trim() : "";
+    const normalizedEmail = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
 
     if (!username || !normalizedEmail || !password) {
-      return new Response(
-        JSON.stringify({ error: "Nombre, email y contraseña son obligatorios" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return json({ error: "Nombre, email y contraseña son obligatorios" }, 400);
+    }
+    if (password.length < 8) {
+      return json({ error: "La contraseña debe tener al menos 8 caracteres" }, 400);
     }
 
-    const existing = await context.env.DB
+    const db = await ensureSchema(context);
+    const existing = await db
       .prepare("SELECT id FROM users WHERE email = ? OR username = ? LIMIT 1")
       .bind(normalizedEmail, username)
       .first();
 
-    if (existing) {
-      return new Response(
-        JSON.stringify({ error: "El usuario o el correo ya están registrados" }),
-        { status: 409, headers: { "Content-Type": "application/json" } },
-      );
-    }
+    if (existing) return json({ error: "El usuario o el correo ya están registrados" }, 409);
 
-    const passwordHash = await hashPassword(password);
-
-    await context.env.DB
+    await db
       .prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)")
-      .bind(username, normalizedEmail, passwordHash, "customer")
+      .bind(username, normalizedEmail, await hashPassword(password), "customer")
       .run();
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Usuario registrado exitosamente" }),
-      { status: 201, headers: { "Content-Type": "application/json" } },
-    );
-  } catch (error: any) {
-    return new Response(
-      JSON.stringify({ error: error?.message || "Error interno del servidor" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return json({ success: true, message: "Usuario registrado exitosamente" }, 201);
+  } catch (error) {
+    return json({ error: errorMessage(error) }, 500);
   }
 }

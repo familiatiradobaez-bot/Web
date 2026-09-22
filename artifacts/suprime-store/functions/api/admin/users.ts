@@ -1,73 +1,52 @@
 import { hashPassword } from "../../lib/password";
+import { ensureSchema, errorMessage, json } from "../../lib/db";
 
-export async function onRequestPost(context: { request: Request; env: { DB: D1Database } }) {
+type ApiContext = { request: Request; env: { DB?: D1Database } };
+
+export async function onRequestPost(context: ApiContext) {
   try {
-    const { username, email, password, role } = await context.request.json() as {
-      username?: string;
-      email?: string;
-      password?: string;
-      role?: string;
+    const body = await context.request.json() as {
+      username?: unknown;
+      email?: unknown;
+      password?: unknown;
+      role?: unknown;
     };
+    const username = typeof body.username === "string" ? body.username.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
+    const role = typeof body.role === "string" && body.role.trim() ? body.role.trim() : "customer";
 
-    const normalizedUsername = username?.trim();
-    const normalizedEmail = email?.trim().toLowerCase();
-
-    if (!normalizedUsername || !normalizedEmail || !password) {
-      return new Response(JSON.stringify({ error: "Faltan campos obligatorios (usuario, correo o contraseña)" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!username || !email || !password) {
+      return json({ error: "Faltan campos obligatorios (usuario, correo o contraseña)" }, 400);
     }
+    if (password.length < 8) return json({ error: "La contraseña debe tener al menos 8 caracteres" }, 400);
 
-    const existingUser = await context.env.DB
+    const db = await ensureSchema(context);
+    const existing = await db
       .prepare("SELECT id FROM users WHERE email = ? OR username = ? LIMIT 1")
-      .bind(normalizedEmail, normalizedUsername)
+      .bind(email, username)
       .first();
+    if (existing) return json({ error: "El usuario o el correo ya están registrados" }, 409);
 
-    if (existingUser) {
-      return new Response(JSON.stringify({ error: "El nombre de usuario o el correo electrónico ya están registrados" }), {
-        status: 409,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const passwordHash = await hashPassword(password);
-
-    await context.env.DB
+    await db
       .prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)")
-      .bind(normalizedUsername, normalizedEmail, passwordHash, role || "customer")
+      .bind(username, email, await hashPassword(password), role)
       .run();
 
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Usuario creado exitosamente desde el panel de administración",
-      user: { username: normalizedUsername, email: normalizedEmail, role: role || "customer" },
-    }), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error?.message || "Error interno al procesar la solicitud" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: true, message: "Usuario creado exitosamente", user: { username, email, role } }, 201);
+  } catch (error) {
+    return json({ error: errorMessage(error) }, 500);
   }
 }
 
-export async function onRequestGet(context: { env: { DB: D1Database } }) {
+export async function onRequestGet(context: { env: { DB?: D1Database } }) {
   try {
-    const { results } = await context.env.DB
-      .prepare("SELECT id, username, email, role FROM users ORDER BY id DESC")
+    const db = await ensureSchema(context);
+    const { results } = await db
+      .prepare("SELECT id, username, email, role, created_at FROM users ORDER BY id DESC")
       .all();
-
-    return new Response(JSON.stringify({ success: true, users: results }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error?.message || "Error al obtener los usuarios" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: true, users: results });
+  } catch (error) {
+    return json({ error: errorMessage(error) }, 500);
   }
 }

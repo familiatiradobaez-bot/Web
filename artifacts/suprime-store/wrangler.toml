@@ -1,7 +1,6 @@
 # ==========================================
-# CONFIGURACIÓN DE CLOUDFLARE PAGES Y WORKERS
+# CLOUDFLARE PAGES + D1 (deploy desde artifacts/suprime-store)
 # ==========================================
-
 name = "suprime-store"
 compatibility_date = "2026-09-20"
 pages_build_output_dir = "dist"
